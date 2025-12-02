@@ -1,5 +1,6 @@
 import { PanelUI } from "@iwsdk/core";
 import { bindPanelButton } from "../utils/panelBindings.js";
+import { bindPanelContent } from "../utils/panelContent.js";
 import { CAMERA, PORTAL } from "../constants/sceneConstants.js";
 import { logger } from "../utils/logger.js";
 import { BaseScene } from "./BaseScene.js";
@@ -34,35 +35,21 @@ export class MainHallScene extends BaseScene {
   }
 
   renderPanels(panels) {
-    panels.forEach((panel, index) => {
-      const entity = this.world.createTransformEntity().addComponent(PanelUI, {
-        config: "/ui/portalPanel.json",
-        maxWidth: 1.4,
-        maxHeight: 0.6,
-        dynamicTitle: panel.title,
-        dynamicDescription: panel.description || "",
-        dynamicImage: panel.image || ""
-      });
-
-      const xOffset = index * 1.6 - (panels.length - 1) * 0.8;
-      entity.object3D.position.set(xOffset, 1.7, -1.6);
-      entity.object3D.lookAt(
-        CAMERA.DEFAULT_POSITION.x,
-        CAMERA.DEFAULT_POSITION.y,
-        CAMERA.DEFAULT_POSITION.z
-      );
-
-      this.trackEntity(entity);
-    });
+    // Skip all panels for now
+    logger.info("[MainHallScene] Skipped panel rendering to avoid overlaps");
   }
 
   renderTeleports(teleports) {
-    const spacing = 1.6;
-    const offsetStart = teleports.length > 1 ? -((teleports.length - 1) * spacing) / 2 : 0;
-    teleports.forEach((teleport, index) => {
-      const xOffset = offsetStart + index * spacing;
-      this.createPortal(teleport.label, xOffset, teleport.target);
-    });
+    // Show only ONE navigation button to test
+    if (teleports && teleports.length > 0) {
+      const firstTeleport = teleports[0]; // Just the first one
+      this.createPortal(firstTeleport.label, 0, firstTeleport.target);
+      logger.info(`[MainHallScene] Created single portal: ${firstTeleport.label}`);
+    } else {
+      // Fallback: create a test button
+      this.createPortal("Gallery", 0, "gallery");
+      logger.info("[MainHallScene] Created fallback Gallery portal");
+    }
   }
 
   /**
@@ -72,27 +59,28 @@ export class MainHallScene extends BaseScene {
    * @param {string} targetSceneName - Key of the target scene to load
    */
   createPortal(label, xOffset, targetSceneName) {
-    logger.debug(`Creating portal: ${label} at x=${xOffset}`);
+    logger.info(`[MainHallScene] Creating portal: ${label} at x=${xOffset}`);
 
     const entity = this.world.createTransformEntity().addComponent(PanelUI, {
-      config: PORTAL.PANEL.configPath,
-      maxWidth: PORTAL.PANEL.maxWidth,
-      maxHeight: PORTAL.PANEL.maxHeight
+      config: "/ui/portalPanel.json",
+      maxWidth: 1.2,
+      maxHeight: 0.5
     });
 
-    entity.object3D.position.set(xOffset, PORTAL.DEFAULT_Y_POSITION, PORTAL.PORTAL_Z);
-    // Make panel face the camera (look at origin)
-    entity.object3D.lookAt(
-      CAMERA.DEFAULT_POSITION.x,
-      CAMERA.DEFAULT_POSITION.y,
-      CAMERA.DEFAULT_POSITION.z
-    );
-    logger.debug(`Portal "${label}" positioned at:`, entity.object3D.position);
+    entity.object3D.position.set(xOffset, 1.5, -1.5);
+    entity.object3D.lookAt(0, 1.6, 0);
 
     this.trackEntity(entity);
+    
+    // Simple button binding
     bindPanelButton(entity, {
       label,
-      onClick: () => this.navigateToScene(targetSceneName)
+      onClick: () => {
+        logger.info(`[MainHallScene] Portal clicked: ${label} -> ${targetSceneName}`);
+        this.navigateToScene(targetSceneName);
+      }
     });
+    
+    logger.info(`[MainHallScene] Portal "${label}" created successfully`);
   }
 }

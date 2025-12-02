@@ -5,6 +5,7 @@ import { BaseScene } from "./BaseScene.js";
 import { getShowcaseScene } from "../content/showcaseContent.js";
 import { createBackButton } from "../components/BackButton.js";
 import { bindPanelButton } from "../utils/panelBindings.js";
+import { bindPanelContent } from "../utils/panelContent.js";
 
 /**
  * Impact Analyzer scene showcasing distributed systems architecture.
@@ -39,10 +40,7 @@ export class ImpactAnalyzerScene extends BaseScene {
       const entity = this.world.createTransformEntity().addComponent(PanelUI, {
         config: "/ui/projectPanel.json",
         maxWidth: CONTENT_PANEL.maxWidth,
-        maxHeight: CONTENT_PANEL.maxHeight,
-        dynamicTitle: panel.title,
-        dynamicDescription: panel.description || "",
-        dynamicImage: panel.image || ""
+        maxHeight: CONTENT_PANEL.maxHeight
       });
 
       entity.object3D.position.set(0, CONTENT_PANEL.Y_POSITION, CONTENT_PANEL.Z_POSITION);
@@ -53,6 +51,13 @@ export class ImpactAnalyzerScene extends BaseScene {
       );
 
       this.trackEntity(entity);
+
+      // Bind panel content
+      bindPanelContent(entity, {
+        title: panel.title,
+        description: panel.description || "",
+        image: panel.image || ""
+      });
     });
   }
 

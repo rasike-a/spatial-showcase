@@ -5,6 +5,7 @@ import { BaseScene } from "./BaseScene.js";
 import { getShowcaseScene } from "../content/showcaseContent.js";
 import { createBackButton } from "../components/BackButton.js";
 import { bindPanelButton } from "../utils/panelBindings.js";
+import { bindPanelContent } from "../utils/panelContent.js";
 
 /**
  * Innovation Lab scene showcasing technical projects and tools.
@@ -44,10 +45,7 @@ export class InnovationLabScene extends BaseScene {
       const entity = this.world.createTransformEntity().addComponent(PanelUI, {
         config: "/ui/projectPanel.json",
         maxWidth: 1.8,
-        maxHeight: 2.2,
-        dynamicTitle: panel.title,
-        dynamicDescription: panel.description || "",
-        dynamicImage: panel.image || ""
+        maxHeight: 2.2
       });
 
       entity.object3D.position.set(x, CAMERA.DEFAULT_HEIGHT, z);
@@ -58,6 +56,13 @@ export class InnovationLabScene extends BaseScene {
       );
 
       this.trackEntity(entity);
+
+      // Bind panel content
+      bindPanelContent(entity, {
+        title: panel.title,
+        description: panel.description || "",
+        image: panel.image || ""
+      });
     });
   }
 

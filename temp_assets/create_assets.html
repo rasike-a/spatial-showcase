@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Asset Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .asset-gen { margin: 20px 0; }
+        canvas { border: 1px solid #ccc; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Portfolio Asset Generator</h1>
+    
+    <div class="asset-gen">
+        <h3>Photography Collection</h3>
+        <canvas id="collection_02" width="800" height="600"></canvas>
+        <button onclick="downloadCanvas('collection_02', 'collection_02.jpg')">Download</button>
+    </div>
+
+    <div class="asset-gen">
+        <h3>Trading Dashboard</h3>
+        <canvas id="trading_dashboard" width="1200" height="800"></canvas>
+        <button onclick="downloadCanvas('trading_dashboard', 'trading_dashboard.png')">Download</button>
+    </div>
+
+    <div class="asset-gen">
+        <h3>Workflow Diagram</h3>
+        <canvas id="workflow" width="1000" height="600"></canvas>
+        <button onclick="downloadCanvas('workflow', 'workflow.png')">Download</button>
+    </div>
+
+    <div class="asset-gen">
+        <h3>Impact Analyzer</h3>
+        <canvas id="impact_analyzer" width="1200" height="800"></canvas>
+        <button onclick="downloadCanvas('impact_analyzer', 'impact_analyzer_diagram.png')">Download</button>
+    </div>
+
+    <script>
+        function createPhotographyAsset() {
+            const canvas = document.getElementById('collection_02');
+            const ctx = canvas.getContext('2d');
+            
+            // Gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 800, 600);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 800, 600);
+            
+            // Camera icon representation
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '60px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('📸', 400, 200);
+            
+            ctx.font = '32px Arial';
+            ctx.fillText('Sri Lanka & Beyond', 400, 280);
+            
+            ctx.font = '18px Arial';
+            ctx.fillStyle = '#cccccc';
+            ctx.fillText('Cinematic moments captured on the move', 400, 320);
+            
+            // Decorative elements
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 2;
+            for(let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(100 + i * 150, 450, 30, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function createTradingDashboard() {
+            const canvas = document.getElementById('trading_dashboard');
+            const ctx = canvas.getContext('2d');
+            
+            // Dark background
+            ctx.fillStyle = '#0f0f23';
+            ctx.fillRect(0, 0, 1200, 800);
+            
+            // Header
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, 1200, 80);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Trading Dashboard - Real-time Markets', 40, 50);
+            
+            // Grid layout
+            const colors = ['#00ff88', '#ff4444', '#4488ff', '#ffaa00'];
+            const labels = ['EQUITY', 'FX', 'CRYPTO', 'INDICES'];
+            
+            for(let i = 0; i < 4; i++) {
+                const x = (i % 2) * 580 + 20;
+                const y = Math.floor(i / 2) * 340 + 100;
+                
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(x, y, 560, 320);
+                
+                ctx.fillStyle = colors[i];
+                ctx.font = '18px Arial';
+                ctx.fillText(labels[i], x + 20, y + 40);
+                
+                // Mock chart lines
+                ctx.strokeStyle = colors[i];
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for(let j = 0; j < 10; j++) {
+                    const px = x + 50 + j * 50;
+                    const py = y + 100 + Math.sin(j * 0.5 + i) * 50;
+                    if(j === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function createWorkflowDiagram() {
+            const canvas = document.getElementById('workflow');
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, 1000, 600);
+            gradient.addColorStop(0, '#0f0f23');
+            gradient.addColorStop(1, '#1a1a2e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1000, 600);
+            
+            // Workflow steps
+            const steps = ['AI', 'Architecture', 'Prototype', 'Deploy'];
+            const stepColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4'];
+            
+            for(let i = 0; i < steps.length; i++) {
+                const x = 100 + i * 200;
+                const y = 250;
+                
+                // Circle
+                ctx.beginPath();
+                ctx.arc(x, y, 50, 0, Math.PI * 2);
+                ctx.fillStyle = stepColors[i];
+                ctx.fill();
+                
+                // Text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(steps[i], x, y + 5);
+                
+                // Arrow
+                if(i < steps.length - 1) {
+                    ctx.strokeStyle = '#666';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 50, y);
+                    ctx.lineTo(x + 150, y);
+                    ctx.stroke();
+                    
+                    // Arrow head
+                    ctx.beginPath();
+                    ctx.moveTo(x + 140, y - 10);
+                    ctx.lineTo(x + 150, y);
+                    ctx.lineTo(x + 140, y + 10);
+                    ctx.stroke();
+                }
+            }
+            
+            // Title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '28px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Lightning-Fast Build Loop', 500, 100);
+            
+            // Subtitle
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#cccccc';
+            ctx.fillText('Multi-cloud Development Arsenal', 500, 450);
+        }
+
+        function createImpactAnalyzer() {
+            const canvas = document.getElementById('impact_analyzer');
+            const ctx = canvas.getContext('2d');
+            
+            // Dark tech background
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, 1200, 800);
+            
+            // Central hub
+            ctx.beginPath();
+            ctx.arc(600, 400, 80, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b35';
+            ctx.fill();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Impact', 600, 395);
+            ctx.fillText('Engine', 600, 415);
+            
+            // Connecting nodes
+            const nodes = [
+                {x: 300, y: 200, label: 'Data\nIngestion'},
+                {x: 900, y: 200, label: 'Analytics\nEngine'},
+                {x: 300, y: 600, label: 'Prediction\nModel'},
+                {x: 900, y: 600, label: 'Action\nTrigger'},
+                {x: 200, y: 400, label: 'Stream\nProcessor'},
+                {x: 1000, y: 400, label: 'Output\nAPI'}
+            ];
+            
+            nodes.forEach(node => {
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 40, 0, Math.PI * 2);
+                ctx.fillStyle = '#1a73e8';
+                ctx.fill();
+                
+                // Connection line
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(600, 400);
+                ctx.lineTo(node.x, node.y);
+                ctx.stroke();
+                
+                // Label
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                const lines = node.label.split('\n');
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, node.x, node.y + (i - 0.5) * 15 + 5);
+                });
+            });
+            
+            // Title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '32px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Impact Analyzer Engine', 600, 80);
+            
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#cccccc';
+            ctx.fillText('Distributed intelligence measuring ripple effects', 600, 110);
+        }
+
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/jpeg', 0.9);
+            link.click();
+        }
+
+        // Generate all assets on page load
+        window.onload = function() {
+            createPhotographyAsset();
+            createTradingDashboard();
+            createWorkflowDiagram();
+            createImpactAnalyzer();
+        };
+    </script>
+</body>
+</html>

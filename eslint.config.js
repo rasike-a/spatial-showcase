@@ -13,7 +13,9 @@ export default [
         THREE: "readonly",
         import: "readonly",
         importMeta: "readonly",
-        requestAnimationFrame: "readonly"
+        requestAnimationFrame: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly"
       },
       parserOptions: {
         ecmaVersion: 2022,

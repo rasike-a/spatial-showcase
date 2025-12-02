@@ -3,8 +3,8 @@ import { CAMERA, CONTENT_PANEL } from "../constants/sceneConstants.js";
 import { logger } from "../utils/logger.js";
 import { BaseScene } from "./BaseScene.js";
 import { getShowcaseScene } from "../content/showcaseContent.js";
-import { createBackButton } from "../components/BackButton.js";
 import { bindPanelButton } from "../utils/panelBindings.js";
+import { bindPanelContent } from "../utils/panelContent.js";
 
 /**
  * Gallery scene showcasing AI art and photography collections.
@@ -26,71 +26,51 @@ export class GalleryScene extends BaseScene {
       return;
     }
 
-    logger.info("GalleryScene: Rendering gallery panels...");
-    createBackButton(this.world, this.sceneManager, this.entities);
-    this.renderPanels(this.sceneData.panels || []);
+    logger.info("GalleryScene: Rendering single element only...");
+    
+    // Show ONLY ONE element - skip BackButton, skip panels, show only first teleport
     this.renderTeleports(this.sceneData.teleports || []);
 
     logger.info(`GalleryScene: Created ${this.entities.length} entities`);
   }
 
   renderPanels(panels) {
-    const radius = 3.5;
-    panels.forEach((panel, index) => {
-      const angle = (index / panels.length) * Math.PI * 2;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-
-      const entity = this.world.createTransformEntity().addComponent(PanelUI, {
-        config: "/ui/projectPanel.json",
-        maxWidth: 1.8,
-        maxHeight: 2.2,
-        dynamicTitle: panel.title,
-        dynamicDescription: panel.description || "",
-        dynamicImage: panel.image || ""
-      });
-
-      entity.object3D.position.set(x, CAMERA.DEFAULT_HEIGHT, z);
-      entity.object3D.lookAt(
-        CAMERA.DEFAULT_POSITION.x,
-        CAMERA.DEFAULT_POSITION.y,
-        CAMERA.DEFAULT_POSITION.z
-      );
-
-      this.trackEntity(entity);
-    });
+    // Skip all panels to avoid overlaps - showing only teleport
+    logger.info("[GalleryScene] Skipped panel rendering - teleport only mode");
   }
 
   renderTeleports(teleports) {
-    const spacing = 1.6;
-    const offsetStart = teleports.length > 1 ? -((teleports.length - 1) * spacing) / 2 : 0;
-    teleports.forEach((teleport, index) => {
-      const xOffset = offsetStart + index * spacing;
-      this.createPortal(teleport.label, xOffset, teleport.target);
-    });
+    // Show only one back button
+    if (teleports && teleports.length > 0) {
+      const backTeleport = teleports[0];
+      this.createPortal(backTeleport.label, 0, backTeleport.target);
+      logger.info(`[GalleryScene] Created single teleport: ${backTeleport.label}`);
+    }
   }
 
   createPortal(label, xOffset, targetSceneId) {
-    logger.debug(`Creating portal: ${label} at x=${xOffset}`);
+    logger.info(`[GalleryScene] Creating portal: ${label}`);
 
     const entity = this.world.createTransformEntity().addComponent(PanelUI, {
       config: "/ui/portalPanel.json",
-      maxWidth: 1.1,
-      maxHeight: 0.45
+      maxWidth: 1.2,
+      maxHeight: 0.5
     });
 
-    entity.object3D.position.set(xOffset, 1.4, 2);
-    entity.object3D.lookAt(
-      CAMERA.DEFAULT_POSITION.x,
-      CAMERA.DEFAULT_POSITION.y,
-      CAMERA.DEFAULT_POSITION.z
-    );
+    entity.object3D.position.set(0, 1.0, -1.8);
+    entity.object3D.lookAt(0, 1.6, 0);
 
     this.trackEntity(entity);
+    
     bindPanelButton(entity, {
       label,
-      onClick: () => this.navigateToScene(targetSceneId)
+      onClick: () => {
+        logger.info(`[GalleryScene] Portal clicked: ${label} -> ${targetSceneId}`);
+        this.navigateToScene(targetSceneId);
+      }
     });
+    
+    logger.info(`[GalleryScene] Portal created: ${label}`);
   }
 }
 
