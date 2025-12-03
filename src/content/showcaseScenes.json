@@ -31,15 +31,25 @@
     "panels": [
       {
         "id": "aiart",
-        "title": "AI Art – Ethereal Worlds",
-        "description": "Curated AI dreamscapes inspired by architecture and nature.",
-        "image": "/assets/images/collection_01.jpg"
+        "title": "AI Art",
+        "description": "Ethereal worlds.",
+        "thumbnails": [
+          "/assets/images/collection_01.jpg",
+          "/assets/images/collection_02.jpg",
+          "/assets/images/collection_03.jpg",
+          "/assets/images/profile.jpg"
+        ]
       },
       {
         "id": "photo",
         "title": "Photography",
-        "description": "Sri Lanka & beyond – cinematic moments captured on the move.",
-        "image": "/assets/images/collection_02.jpg"
+        "description": "Cinematic moments.",
+        "thumbnails": [
+          "/assets/images/collection_01.jpg",
+          "/assets/images/collection_02.jpg",
+          "/assets/images/collection_03.jpg",
+          "/assets/images/profile.jpg"
+        ]
       }
     ],
     "teleports": [
