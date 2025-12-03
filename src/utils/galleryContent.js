@@ -9,9 +9,10 @@ import { logger } from "./logger.js";
  * @param {string} content.title - Panel title text
  * @param {string} content.description - Panel description text (reduced)
  * @param {string[]} content.thumbnails - Array of 4 image URLs for thumbnails
+ * @param {Function} onThumbnailClick - Callback function when thumbnail is clicked (receives imageSrc)
  * @param {number} maxAttempts - Number of RAF retries while waiting for document
  */
-export function bindGalleryContent(entity, content, maxAttempts = 200) {
+export function bindGalleryContent(entity, content, onThumbnailClick = null, maxAttempts = 200) {
   function attemptBinding(attempt = 0) {
     try {
       // Check if entity.index is valid
@@ -90,11 +91,17 @@ export function bindGalleryContent(entity, content, maxAttempts = 200) {
       // Bind 4 thumbnails
       if (content.thumbnails && Array.isArray(content.thumbnails)) {
         const thumbnails = content.thumbnails.slice(0, 4); // Ensure max 4 thumbnails
-        logger.info(`[GalleryContent] Binding ${thumbnails.length} thumbnails for entity ${entity.index}`);
+        logger.info(`[GalleryContent] Binding ${thumbnails.length} thumbnails for entity ${entity.index}`, thumbnails);
+
+        // First, try to find all thumbnail elements to verify they exist
+        if (document.querySelectorAll) {
+          const allThumbnails = document.querySelectorAll('.gallery-thumbnail');
+          logger.info(`[GalleryContent] Found ${allThumbnails.length} thumbnail elements in document for entity ${entity.index}`);
+        }
 
         thumbnails.forEach((thumbnailSrc, index) => {
           const thumbnailId = `thumbnail-${index + 1}`;
-          logger.debug(`[GalleryContent] Looking for thumbnail element: ${thumbnailId}`);
+          logger.info(`[GalleryContent] Processing thumbnail ${index + 1}/${thumbnails.length}: ${thumbnailId} -> ${thumbnailSrc}`);
           
           // Use the PanelUI document (already retrieved above)
           let thumbnailElement = document.getElementById?.(thumbnailId);
@@ -106,20 +113,29 @@ export function bindGalleryContent(entity, content, maxAttempts = 200) {
           if (!thumbnailElement && document.querySelector) {
             // Try finding by class and index as fallback
             const allThumbnails = document.querySelectorAll?.('.gallery-thumbnail');
+            logger.info(`[GalleryContent] Fallback: Found ${allThumbnails?.length || 0} thumbnails by class for entity ${entity.index}`);
             if (allThumbnails && allThumbnails.length > index) {
               thumbnailElement = allThumbnails[index];
-              logger.debug(`[GalleryContent] Found thumbnail ${index} by class selector (fallback)`);
+              logger.info(`[GalleryContent] Found thumbnail ${index} by class selector (fallback): ${thumbnailElement.id || 'no-id'}`);
             }
           }
           
           if (thumbnailElement) {
-            logger.info(`[GalleryContent] Found thumbnail element ${thumbnailId}`);
+            logger.info(`[GalleryContent] Found thumbnail element ${thumbnailId} for entity ${entity.index}`);
           } else {
-            logger.warn(`[GalleryContent] Thumbnail element ${thumbnailId} not found in PanelUI document`);
+            logger.warn(`[GalleryContent] Thumbnail element ${thumbnailId} NOT FOUND in document for entity ${entity.index}`);
+            // Try to log available elements for debugging
+            if (document.querySelectorAll) {
+              const allImages = document.querySelectorAll("img");
+              logger.warn(`[GalleryContent] Available img elements in document: ${allImages.length}`);
+              allImages.forEach((img, idx) => {
+                logger.warn(`[GalleryContent]   img[${idx}]: id=${img.id}, class=${img.className}`);
+              });
+            }
           }
 
           if (thumbnailElement) {
-            logger.info(`[GalleryContent] Found thumbnail element ${thumbnailId}, setting src: ${thumbnailSrc}`);
+            logger.info(`[GalleryContent] Setting thumbnail ${thumbnailId} (index ${index}) to: ${thumbnailSrc}`);
             const imageSrc = thumbnailSrc || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E";
 
             // Set image with multiple fallback methods
@@ -149,16 +165,82 @@ export function bindGalleryContent(entity, content, maxAttempts = 200) {
               thumbnailElement.addEventListener("error", handleImageError, { once: true });
             }
 
-            if (imageSet) {
-              logger.info(`[GalleryContent] Successfully set thumbnail ${thumbnailId}: ${imageSrc}`);
+            // Add click handler for popup
+            if (onThumbnailClick) {
+              // Remove any existing click handler to prevent duplicates
+              if (thumbnailElement.__thumbnailClickHandler) {
+                if (thumbnailElement.removeEventListener) {
+                  thumbnailElement.removeEventListener("click", thumbnailElement.__thumbnailClickHandler);
+                }
+              }
+
+              const clickHandler = (event) => {
+                logger.info(`[GalleryContent] Thumbnail ${thumbnailId} clicked!`, { event, imageSrc });
+                if (event) {
+                  if (typeof event.stopPropagation === "function") {
+                    event.stopPropagation();
+                  }
+                  if (typeof event.preventDefault === "function") {
+                    event.preventDefault();
+                  }
+                }
+                try {
+                  onThumbnailClick(imageSrc);
+                } catch (error) {
+                  logger.error(`[GalleryContent] Error in thumbnail click handler:`, error);
+                }
+              };
+
+              // Try multiple ways to attach the click handler
+              if (thumbnailElement.addEventListener) {
+                thumbnailElement.addEventListener("click", clickHandler, { capture: false });
+                thumbnailElement.__thumbnailClickHandler = clickHandler;
+                logger.info(`[GalleryContent] ✓ Click handler attached to thumbnail ${thumbnailId} via addEventListener`);
+              } else if (thumbnailElement.onclick !== undefined) {
+                thumbnailElement.onclick = clickHandler;
+                thumbnailElement.__thumbnailClickHandler = clickHandler;
+                logger.info(`[GalleryContent] ✓ Click handler attached to thumbnail ${thumbnailId} via onclick`);
+              } else {
+                logger.warn(`[GalleryContent] ✗ Cannot attach click handler to thumbnail ${thumbnailId} - no event methods available`);
+              }
+
+              // Set cursor and pointer-events
+              if (thumbnailElement.style) {
+                thumbnailElement.style.cursor = "pointer";
+                thumbnailElement.style.pointerEvents = "auto";
+              }
+              if (thumbnailElement.setAttribute) {
+                thumbnailElement.setAttribute("style", "cursor: pointer; pointer-events: auto;");
+              }
             } else {
-              logger.warn(`[GalleryContent] Failed to set thumbnail ${thumbnailId} src`);
+              logger.warn(`[GalleryContent] No onThumbnailClick callback provided for thumbnail ${thumbnailId}`);
+            }
+
+            if (imageSet) {
+              logger.info(`[GalleryContent] ✓ Successfully set thumbnail ${thumbnailId} (${index + 1}/4) to: ${imageSrc}`);
+              // Verify the image was actually set
+              const actualSrc = thumbnailElement.src || thumbnailElement.getAttribute?.("src");
+              if (actualSrc && actualSrc !== imageSrc) {
+                logger.warn(`[GalleryContent] Thumbnail ${thumbnailId} src mismatch! Expected: ${imageSrc}, Got: ${actualSrc}`);
+              }
+            } else {
+              logger.error(`[GalleryContent] ✗ Failed to set thumbnail ${thumbnailId} src`);
             }
           } else {
-            logger.error(`[GalleryContent] Thumbnail element ${thumbnailId} NOT FOUND in document for entity ${entity.index}`);
-            logger.debug(`[GalleryContent] Document structure:`, document);
+            logger.error(`[GalleryContent] ✗ Thumbnail element ${thumbnailId} NOT FOUND in document for entity ${entity.index}`);
+            // Try to log available elements for debugging
+            if (document.querySelectorAll) {
+              const allImages = document.querySelectorAll("img");
+              logger.error(`[GalleryContent] Available img elements: ${allImages.length}`);
+              allImages.forEach((img, idx) => {
+                logger.error(`[GalleryContent]   img[${idx}]: id="${img.id}", class="${img.className}", src="${img.src || img.getAttribute?.('src') || 'none'}"`);
+              });
+            }
           }
         });
+        
+        // Final verification - check all thumbnails were set
+        logger.info(`[GalleryContent] Completed binding ${thumbnails.length} thumbnails for entity ${entity.index}`);
       } else {
         logger.warn(`[GalleryContent] No thumbnails array provided for entity ${entity.index}`);
       }

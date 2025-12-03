@@ -1,4 +1,4 @@
-import { PanelUI } from "@iwsdk/core";
+import { PanelUI, PanelDocument } from "@iwsdk/core";
 import { CAMERA } from "../constants/sceneConstants.js";
 import { logger } from "../utils/logger.js";
 import { BaseScene } from "./BaseScene.js";
@@ -13,6 +13,7 @@ import { bindGalleryContent } from "../utils/galleryContent.js";
 export class GalleryScene extends BaseScene {
   constructor(world, sceneManager) {
     super(world, sceneManager);
+    this.popupEntity = null; // Track the popup entity
   }
 
   /**
@@ -39,6 +40,16 @@ export class GalleryScene extends BaseScene {
     this.renderTeleports(this.sceneData.teleports || []);
 
     logger.info(`GalleryScene: Created ${this.entities.length} entities`);
+  }
+
+  /**
+   * Override dispose to clean up popup before base disposal.
+   */
+  dispose() {
+    // Hide popup before disposing scene
+    this.hideImagePopup();
+    // Call parent dispose
+    super.dispose();
   }
 
   renderPanels(panels) {
@@ -100,11 +111,18 @@ export class GalleryScene extends BaseScene {
             thumbnailCount: thumbnailList.length
           });
 
-          bindGalleryContent(entity, {
-            title: panel.title,
-            description: panel.description || "",
-            thumbnails: thumbnailList
-          });
+          bindGalleryContent(
+            entity,
+            {
+              title: panel.title,
+              description: panel.description || "",
+              thumbnails: thumbnailList
+            },
+            (imageSrc) => {
+              // Callback when thumbnail is clicked - show popup
+              this.showImagePopup(imageSrc);
+            }
+          );
         });
       });
 
@@ -164,6 +182,189 @@ export class GalleryScene extends BaseScene {
     });
 
     logger.info(`[GalleryScene] Portal "${label}" created successfully`);
+  }
+
+  /**
+   * Shows a popup with a full-size image when a thumbnail is clicked.
+   * @param {string} imageSrc - Source URL of the image to display
+   */
+  showImagePopup(imageSrc) {
+    logger.info(`[GalleryScene] Showing image popup for: ${imageSrc}`);
+
+    // Hide existing popup if any
+    if (this.popupEntity) {
+      this.hideImagePopup();
+    }
+
+    // Create popup entity - size matched to content
+    const popupEntity = this.world.createTransformEntity().addComponent(PanelUI, {
+      config: "/ui/imagePopup.json",
+      maxWidth: 1.8, // Matched to content width (10 + padding)
+      maxHeight: 2.0 // Matched to content height (7 image + header + padding)
+    });
+
+    logger.info(`[GalleryScene] Popup entity created with index: ${popupEntity.index}`);
+
+    // Position popup centered in front of user
+    popupEntity.object3D.position.set(0, 1.5, -1.8);
+    popupEntity.object3D.lookAt(0, 1.6, 0);
+
+    logger.info(`[GalleryScene] Popup positioned at: (0, 1.5, -1.8)`);
+
+    this.trackEntity(popupEntity);
+    this.popupEntity = popupEntity;
+
+    // Bind popup content after a delay to ensure PanelUI is ready
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.bindPopupContent(popupEntity, imageSrc);
+      });
+    });
+
+    logger.info(`[GalleryScene] Image popup created for: ${imageSrc}`);
+  }
+
+  /**
+   * Binds content to the popup (image and close button).
+   * @param {Entity} popupEntity - The popup entity
+   * @param {string} imageSrc - Source URL of the image
+   */
+  bindPopupContent(popupEntity, imageSrc) {
+    const scene = this; // Capture 'this' for use in nested function
+
+    function attemptBinding(attempt = 0) {
+      try {
+        if (popupEntity.index === undefined || popupEntity.index === null) {
+          if (attempt < 200) {
+            requestAnimationFrame(() => attemptBinding(attempt + 1));
+          } else {
+            logger.warn("[GalleryScene] Popup entity index not available");
+          }
+          return;
+        }
+
+        const document = PanelDocument.data.document[popupEntity.index];
+        if (!document) {
+          if (attempt < 200) {
+            requestAnimationFrame(() => attemptBinding(attempt + 1));
+          } else {
+            logger.warn("[GalleryScene] Popup document not ready");
+          }
+          return;
+        }
+
+        // Set popup image
+        let imageElement = document.getElementById?.("popup-image");
+        if (!imageElement && document.querySelector) {
+          imageElement = document.querySelector("#popup-image");
+        }
+
+        if (imageElement) {
+          let imageSet = false;
+          if (imageElement.setProperties) {
+            try {
+              imageElement.setProperties({ src: imageSrc });
+              imageSet = true;
+            } catch (e) {
+              logger.debug(`[GalleryScene] setProperties failed: ${e.message}`);
+            }
+          }
+          if (!imageSet && imageElement.src !== undefined) {
+            imageElement.src = imageSrc;
+            imageSet = true;
+          }
+          if (!imageSet && imageElement.setAttribute) {
+            imageElement.setAttribute("src", imageSrc);
+            imageSet = true;
+          }
+
+          if (imageSet) {
+            logger.info(`[GalleryScene] Set popup image: ${imageSrc}`);
+          }
+        }
+
+        // Bind close button
+        let closeButton = document.getElementById?.("popup-close-button");
+        if (!closeButton && document.querySelector) {
+          closeButton = document.querySelector("#popup-close-button");
+        }
+
+        if (closeButton) {
+          // Remove existing handler if any
+          if (closeButton.__closeHandler) {
+            closeButton.removeEventListener("click", closeButton.__closeHandler);
+          }
+
+          const closeHandler = (event) => {
+            if (event) {
+              event.stopPropagation();
+            }
+            logger.info("[GalleryScene] Close button clicked");
+            scene.hideImagePopup();
+          };
+
+          closeButton.addEventListener("click", closeHandler);
+          closeButton.__closeHandler = closeHandler;
+          logger.info("[GalleryScene] Close button bound");
+        }
+
+        logger.debug("[GalleryScene] Popup content bound successfully");
+      } catch (error) {
+        logger.error("[GalleryScene] Error binding popup content:", error);
+      }
+    }
+
+    attemptBinding(0);
+  }
+
+  /**
+   * Hides and disposes of the image popup.
+   */
+  hideImagePopup() {
+    if (this.popupEntity) {
+      logger.info("[GalleryScene] Hiding image popup");
+
+      const popupToRemove = this.popupEntity;
+      this.popupEntity = null; // Clear reference first
+
+      // Remove from entities array if it's there
+      const index = this.entities.indexOf(popupToRemove);
+      if (index > -1) {
+        this.entities.splice(index, 1);
+      }
+
+      // Dispose of the popup entity
+      if (popupToRemove.object3D) {
+        if (popupToRemove.object3D.parent) {
+          popupToRemove.object3D.parent.remove(popupToRemove.object3D);
+        }
+        if (this.world?.scene?.remove) {
+          try {
+            this.world.scene.remove(popupToRemove.object3D);
+          } catch (e) {
+            logger.debug(`[GalleryScene] Could not remove popup from world scene: ${e.message}`);
+          }
+        }
+
+        // Dispose Three.js resources
+        popupToRemove.object3D.traverse((object) => {
+          if (object.isMesh) {
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+              if (Array.isArray(object.material)) {
+                object.material.forEach((m) => m.dispose());
+              } else {
+                object.material.dispose();
+              }
+            }
+          }
+        });
+
+        popupToRemove.object3D = null;
+      }
+
+      logger.info("[GalleryScene] Image popup hidden");
+    }
   }
 }
 

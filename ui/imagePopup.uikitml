@@ -1,0 +1,72 @@
+<style>
+  .popup-overlay {
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.2;
+    padding-top: 0.5;
+    width: 10;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(26, 26, 26, 0.95);
+    border-radius: 0.8;
+    gap: 0.2;
+    border-width: 0.15;
+    border-color: #666666;
+  }
+
+  .popup-header {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 0;
+    margin: 0;
+    margin-bottom: -0.5;
+    margin-top: -0.2;
+  }
+
+  .popup-close-button {
+    width: 0.6;
+    height: 0.6;
+    background-color: #ff4444;
+    border-radius: 0.1;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .popup-close-button-text {
+    font-size: 0.6;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
+    display: flex;
+  }
+
+  .popup-image {
+    width: 100%;
+    height: 7.5;
+    object-fit: contain;
+    border-radius: 0.3;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+</style>
+<div class="popup-overlay">
+  <div class="popup-header">
+    <div id="popup-close-button" class="popup-close-button">
+      <span class="popup-close-button-text">X</span>
+    </div>
+  </div>
+  <img id="popup-image" class="popup-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E" />
+</div>
+
